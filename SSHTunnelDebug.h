@@ -54,17 +54,10 @@ extern NSUInteger STDebugLevel;
 			## __VA_ARGS__);                                           \
 	}                                                                  \
 } while (0)
-#define STDebugStaticLog(x, fmt, ...) do {                             \
-	if (STDebugOn(x)) {                                                \
-		NSLog([@"[%s:%04d] " stringByAppendingString:fmt],             \
-			__FUNCTION__, __LINE__, ## __VA_ARGS__);                   \
-	}                                                                  \
-} while (0)
 #else
 #define STDebugOn(x) ((void) 0)
 #define STDebugThis(x) ((void) 0)
 #define STDebugLog(x, fmt, ...) ((void) 0)
-#define STDebugStaticLog(x, fmt, ...) ((void) 0)
 #endif
 
 #define ST_D_NONE            0x0000000000000000
