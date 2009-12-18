@@ -7,3 +7,8 @@ is an easy-to-use Cocoa framework for creating SSH tunnels.
 ## New in SSHTunnel 1.0
 
 * It's all new!
+
+### Contact
+
+* Email: joe.roback@gmail.com
+* IRC: freenode.net, nick: dirtyfreebooter
