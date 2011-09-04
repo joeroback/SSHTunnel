@@ -36,7 +36,7 @@
 #import <Foundation/Foundation.h>
 
 
-typedef enum
+enum
 {
 	SSHTunnelTerminationReasonExit = 1,
 	SSHTunnelTerminationReasonPermissionDenied = 2,
@@ -46,14 +46,18 @@ typedef enum
 	SSHTunnelTerminationReasonConnectionRefused = 6,
 	SSHTunnelTerminationReasonLocalBindAddressInUse = 7,
 	SSHTunnelTerminationReasonRemoteBindAddressInUse = 8
-} SSHTunnelTerminationReason;
+};
 
-typedef enum
+typedef NSInteger SSHTunnelTerminationReason;
+
+enum
 {
 	SSHTunnelX11ForwardingNone = 1,
 	SSHTunnelX11ForwardingUntrusted = 2,
 	SSHTunnelX11ForwardingTrusted = 3
-} SSHTunnelX11Forwarding;
+};
+
+typedef NSInteger SSHTunnelX11Forwarding;
 
 /*!
  @abstract SSH Tunnels

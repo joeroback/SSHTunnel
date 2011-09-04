@@ -128,7 +128,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08hx";
 {
 	if (self = [super init])
 	{
-		self.sshLaunchPath = @"/usr/bin/ssh";
+		self.sshLaunchPath = @"/usr/bin/ssh2";
 		self.allocatesPseudoTTY = NO;
 		self.allowsPasswordAuthentication = YES;
 		self.allowsPublicKeyAuthentication = YES;
@@ -646,21 +646,13 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08hx";
 {
 	int rval, ret;
 	
-	NSLog(@"FOOBAR!");
-	exit(1);
-	
 	do
 	{
-		NSLog(@"_setupNamedPipe");
-		
 		rval = (int) (((double)random()) / (((double)RAND_MAX) + 1.0) * (999999.0 * 999999.0));
 		rval %= 999999;
 		
-		NSLog(@"rval: %d", rval);
-		
 		// try this filename
 		_namedPipe = [NSString stringWithFormat:SSHTunnelNamedPipeFormat, NSUserName(), (short) rval];
-		
 		NSLog(@"_namedPipe: %@", _namedPipe);
 		
 		exit(1);
