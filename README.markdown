@@ -10,5 +10,5 @@ is an easy-to-use Cocoa framework for creating SSH tunnels.
 
 ### Contact
 
-* Email: joe.roback@gmail.com
+* Email: joe@roback.cc
 * IRC: freenode.net, nick: dirtyfreebooter

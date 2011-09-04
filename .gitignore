@@ -1,17 +1,2 @@
-# osx
 .DS_Store
-profile
 *.swp
-
-# xcode
-build/
-*~.nib
-*.xcclassmodel/*
-*.pbxuser
-*.perspective
-*.perspectivev3
-*.mode1v3
-*.mode2v3
-
-# old skool
-.svn
