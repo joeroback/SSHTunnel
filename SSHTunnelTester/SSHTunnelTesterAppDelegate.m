@@ -60,24 +60,31 @@
 	// set tunnel options
 	[sshTunnel setConnectTimeout:15U];
 	
-	[sshTunnel addLocalForwardWithBindAddress:nil
-					 bindPort:60000U
+	[sshTunnel setX11Forwarding:[forwardX11 state] == NSOnState];
+	[sshTunnel setX11TrustedForwarding:[forwardTrustedX11 state] == NSOnState];
+	
+	[sshTunnel addLocalForwardWithBindAddress:@"*"
+					 bindPort:50000U
 					     host:@"localhost"
-					 hostPort:5901U];
+					 hostPort:22U];
+	
+	[sshTunnel addLocalForwardWithBindAddress:nil
+					 bindPort:50001U
+					     host:@"localhost"
+					 hostPort:5900U];
 	
 	[sshTunnel addRemoteForwardWithBindAddress:nil
-					  bindPort:60000U
-					      host:@"localhost"
+					  bindPort:30000U
+					      host:@"127.0.0.1"
 					  hostPort:25U];
 	
-	[sshTunnel addRemoteForwardWithBindAddress:@"*"
-					  bindPort:60001U
+	[sshTunnel addRemoteForwardWithBindAddress:nil
+					  bindPort:30001U
 					      host:@"localhost"
-					  hostPort:25U];
+					  hostPort:22U];
 	
 	[sshTunnel addDynamicForwardWithBindAddress:@"localhost"
 					   bindPort:1080U];
-	
 	[sshTunnel addDynamicForwardWithBindAddress:@"*"
 					   bindPort:1081U];
 	[sshTunnel addDynamicForwardWithBindAddress:nil

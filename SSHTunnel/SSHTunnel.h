@@ -49,14 +49,6 @@ enum
 
 typedef NSInteger SSHTunnelTerminationReason;
 
-enum
-{
-	SSHTunnelX11ForwardingNone = 1,
-	SSHTunnelX11ForwardingUntrusted = 2,
-	SSHTunnelX11ForwardingTrusted = 3
-};
-
-typedef NSInteger SSHTunnelX11Forwarding;
 
 /*!
  @abstract SSH Tunnels
@@ -87,7 +79,8 @@ typedef NSInteger SSHTunnelX11Forwarding;
 	BOOL _forceProtocol2;
 	BOOL _gatewayPorts;
 	NSString *_identityFile;
-	SSHTunnelX11Forwarding _X11Forwarding;
+	BOOL _X11Forwarding;
+	BOOL _X11TrustedForwarding;
 	
 	NSMutableArray *_localForwards;
 	NSMutableArray *_remoteForwards;
@@ -121,14 +114,15 @@ typedef NSInteger SSHTunnelX11Forwarding;
 @property (readwrite,assign) BOOL forceProtocol2;
 @property (readwrite,assign) BOOL  gatewayPorts;
 @property (readwrite,retain) NSString *identityFile;
-@property (readwrite,assign) SSHTunnelX11Forwarding X11Forwarding;
+@property (readwrite,assign) BOOL X11Forwarding;
+@property (readwrite,assign) BOOL X11TrustedForwarding;
 
 @property (readonly) NSArray *localForwards;
 @property (readonly) NSArray *remoteForwards;
 @property (readonly) NSArray *dynamicForwards;
 
-@property (readonly,assign,getter=isConnected) BOOL connected;
-@property (readonly,assign) SSHTunnelTerminationReason terminationReason;
+@property (readonly,getter=isConnected) BOOL connected;
+@property (readonly) SSHTunnelTerminationReason terminationReason;
 
 + (SSHTunnel *)sshTunnelWithHostname:(NSString *)hostname
 				port:(NSUInteger)port

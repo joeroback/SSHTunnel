@@ -41,7 +41,7 @@
 #import <sys/stat.h>
 
 
-NSUInteger STDebugLevel = ST_D_ALL;
+NSUInteger STDebugLevel = 0U;
 
 NSString * const SSHTunnelDidConnectNotification = @"SSHTunnelDidConnectNotification";
 NSString * const SSHTunnelDidTerminateNotification = @"SSHTunnelDidTerminateNotification";
@@ -71,13 +71,10 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 @implementation SSHTunnel
 
 @synthesize sshLaunchPath=_sshLaunchPath;
-
 @synthesize hostname=_hostname;
 @synthesize port=_port;
-
 @synthesize username=_username;
 @synthesize password=_password;
-
 @synthesize allocatesPseudoTTY=_allocatesPseudoTTY;
 @synthesize allowsPasswordAuthentication=_allowsPasswordAuthentication;
 @synthesize allowsPublicKeyAuthentication=_allowsPublicKeyAuthentication;
@@ -90,6 +87,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 @synthesize gatewayPorts=_gatewayPorts;
 @synthesize identityFile=_identityFile;
 @synthesize X11Forwarding=_X11Forwarding;
+@synthesize X11TrustedForwarding=_X11TrustedForwarding;
 
 @synthesize localForwards=_localForwards;
 @synthesize remoteForwards=_remoteForwards;
@@ -140,7 +138,8 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 		self.forceProtocol2 = NO;
 		self.gatewayPorts = NO;
 		self.identityFile = nil;
-		self.X11Forwarding = SSHTunnelX11ForwardingNone;
+		self.X11Forwarding = NO;
+		self.X11TrustedForwarding = NO;
 		_localForwards = [[NSMutableArray alloc] initWithCapacity:0U];
 		_remoteForwards = [[NSMutableArray alloc] initWithCapacity:0U];
 		_dynamicForwards = [[NSMutableArray alloc] initWithCapacity:0U];
@@ -353,29 +352,14 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 		[sshArgs addObject:[NSString stringWithFormat:@"-i'%@'", self.identityFile]];
 	}
 	
-	// (-x,-X,-Y) X11 forwarding
-	switch (self.X11Forwarding)
+	if (self.X11Forwarding)
 	{
-		case SSHTunnelX11ForwardingNone:
-		{
-			[sshArgs addObject:@"-x"];
-			break;
-		}
-		case SSHTunnelX11ForwardingUntrusted:
-		{
-			[sshArgs addObject:@"-X"];
-			break;
-		}
-		case SSHTunnelX11ForwardingTrusted:
-		{
-			[sshArgs addObject:@"-Y"];
-			break;
-		}
-		default:
-		{
-			[NSException raise:NSInvalidArgumentException
-				    format:@"invalid X11 forwarding option"];
-		}
+		[sshArgs addObject:@"-X"];
+	}
+	
+	if (self.X11TrustedForwarding)
+	{
+		[sshArgs addObject:@"-Y"];
 	}
 	
 	//
@@ -387,7 +371,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		NSString *bindAddress = [localForward valueForKey:kSSHTunnelForwardBindAddress];
 		
-		[sshArgs addObject:[NSString stringWithFormat:@"-L%@/%u/%@/%u",
+		[sshArgs addObject:[NSString stringWithFormat:@"-L%@:%u:%@:%u",
 				    (bindAddress) ? bindAddress : @"",
 				    [[localForward valueForKey:kSSHTunnelForwardBindPort] integerValue],
 				    [localForward valueForKey:kSSHTunnelForwardHost],
@@ -399,7 +383,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		NSString *bindAddress = [remoteForward valueForKey:kSSHTunnelForwardBindAddress];
 		
-		[sshArgs addObject:[NSString stringWithFormat:@"-R%@/%u/%@/%u",
+		[sshArgs addObject:[NSString stringWithFormat:@"-R%@:%u:%@:%u",
 				    (bindAddress) ? bindAddress : @"",
 				    [[remoteForward valueForKey:kSSHTunnelForwardBindPort] integerValue],
 				    [remoteForward valueForKey:kSSHTunnelForwardHost],
@@ -411,7 +395,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		NSString *bindAddress = [dynamicForward valueForKey:kSSHTunnelForwardBindAddress];
 		
-		[sshArgs addObject:[NSString stringWithFormat:@"-D%@/%u",
+		[sshArgs addObject:[NSString stringWithFormat:@"-D%@:%u",
 				    (bindAddress) ? bindAddress : @"",
 				    [[dynamicForward valueForKey:kSSHTunnelForwardBindPort] integerValue]]];
 	}
