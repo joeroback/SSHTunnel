@@ -37,6 +37,7 @@
 #import "SSHTunnelDebug.h"
 
 #import <stdlib.h>
+#import <time.h>
 #import <sys/types.h>
 #import <sys/stat.h>
 
@@ -54,7 +55,7 @@ NSString * const kSSHTunnelForwardBindPort = @"kSSHTunnelForwardBindPort";
 NSString * const kSSHTunnelForwardHost = @"kSSHTunnelForwardHost";
 NSString * const kSSHTunnelForwardHostPort = @"kSSHTunnelForwardHostPort";
 
-static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08hx";
+static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 
 @interface SSHTunnel ()
 - (void)_addForward:(NSMutableArray *)forwards
@@ -128,7 +129,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08hx";
 {
 	if (self = [super init])
 	{
-		self.sshLaunchPath = @"/usr/bin/ssh2";
+		self.sshLaunchPath = @"/usr/bin/ssh";
 		self.allocatesPseudoTTY = NO;
 		self.allowsPasswordAuthentication = YES;
 		self.allowsPublicKeyAuthentication = YES;
@@ -619,7 +620,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08hx";
 
 - (void)_cleanupNamedPipe
 {
-	STDebugLog(ST_D_CLEANUPPIPE, @"pipe: %@", _namedPipe);
+	STDebugLog(ST_D_NAMEDPIPE, @"pipe: %@", _namedPipe);
 	
 	if (_namedPipe && [[NSFileManager defaultManager] isDeletableFileAtPath:_namedPipe])
 	{
@@ -644,24 +645,41 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08hx";
 
 - (void)_setupNamedPipe
 {
-	int rval, ret;
+	struct timespec ts;
+	int limit = 0, ret;
+	long rval;
+	
+	ts.tv_sec = 0;
+	ts.tv_nsec = 250000000; // 250ms
 	
 	do
 	{
-		rval = (int) (((double)random()) / (((double)RAND_MAX) + 1.0) * (999999.0 * 999999.0));
-		rval %= 999999;
+		rval = random();
+		rval &= 0xffffffff; // only want the bottom 32 bits
 		
 		// try this filename
-		_namedPipe = [NSString stringWithFormat:SSHTunnelNamedPipeFormat, NSUserName(), (short) rval];
-		NSLog(@"_namedPipe: %@", _namedPipe);
+		_namedPipe = [NSString stringWithFormat:SSHTunnelNamedPipeFormat, NSUserName(), rval];
+		STDebugLog(ST_D_NAMEDPIPE, @"_namedPipe: %@", _namedPipe);
 		
-		exit(1);
-		
+		// if we found an unique name, break out of loop
 		if (![[NSFileManager defaultManager] fileExistsAtPath:_namedPipe])
 		{
 			break;
 		}
-	} while (1);
+		
+		// did get a unique filename, sleep for a short time
+		// (give random enough time to seed a new value)
+		// then, try again
+		
+		limit++;
+		nanosleep(&ts, NULL);
+	} while (limit <= 99);
+	
+	if (limit > 99)
+	{
+		[NSException raise:NSInvalidArgumentException
+			    format:@"could not create unique pipe name"];
+	}
 	
 	// create fifo pipe
 	if ((ret = mkfifo([_namedPipe cStringUsingEncoding:NSUTF8StringEncoding], S_IRUSR|S_IWUSR)) != 0)

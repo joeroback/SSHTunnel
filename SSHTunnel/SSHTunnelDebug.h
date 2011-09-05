@@ -62,16 +62,16 @@ extern NSUInteger STDebugLevel;
 #define STDebugLog(x, fmt, ...) ((void) 0)
 #endif
 
-#define ST_D_NONE            0x0000000000000000
-#define ST_D_THIS            0x0000000000000001
-#define ST_D_INIT            (ST_D_THIS << 1)
-#define ST_D_DEALLOC         (ST_D_THIS << 2)
-#define ST_D_LAUNCH          (ST_D_THIS << 3)
-#define ST_D_TERMINATE       (ST_D_THIS << 4)
-#define ST_D__TERMINATE      (ST_D_THIS << 5)
-#define ST_D_SSHDIDTERMINATE (ST_D_THIS << 6)
-#define ST_D_SSHSTDERR       (ST_D_THIS << 7)
-#define ST_D_CLEANUPPIPE     (ST_D_THIS << 8)
-#define ST_D_PROCESSOUTPUT   (ST_D_THIS << 9)
-#define ST_D_PIPETHREAD      (ST_D_THIS << 10)
-#define ST_D_ALL             0xffffffffffffffff
+#define ST_D_NONE            0x0000000000000000UL
+#define ST_D_THIS            0x0000000000000001UL
+#define ST_D_INIT            (ST_D_THIS << 1UL)
+#define ST_D_DEALLOC         (ST_D_THIS << 2UL)
+#define ST_D_LAUNCH          (ST_D_THIS << 3UL)
+#define ST_D_TERMINATE       (ST_D_THIS << 4UL)
+#define ST_D__TERMINATE      (ST_D_THIS << 5UL)
+#define ST_D_SSHDIDTERMINATE (ST_D_THIS << 6UL)
+#define ST_D_SSHSTDERR       (ST_D_THIS << 7UL)
+#define ST_D_NAMEDPIPE       (ST_D_THIS << 8UL)
+#define ST_D_PROCESSOUTPUT   (ST_D_THIS << 9UL)
+#define ST_D_PIPETHREAD      (ST_D_THIS << 10UL)
+#define ST_D_ALL             0xffffffffffffffffUL
