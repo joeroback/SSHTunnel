@@ -30,7 +30,6 @@
 //  SSHTunnel
 //
 //  Created by Joseph Roback on 12/11/09.
-//  Copyright 2009 Joseph A. Roback. All rights reserved.
 //
 
 #import "SSHTunnel.h"

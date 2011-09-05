@@ -1,9 +1,11 @@
 //
+// Copyright (c) 2011, Joseph A. Roback
+// All rights reserved.
+//
 //  SSHTunnelTesterAppDelegate.h
 //  SSHTunnelTester
 //
 //  Created by Joseph Roback on 9/5/11.
-//  Copyright 2011 Nawsoft. All rights reserved.
 //
 
 #import <Cocoa/Cocoa.h>
