@@ -283,8 +283,8 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	// setup ssh arguments
 	NSMutableArray *sshArgs = [NSMutableArray array];
 	
-	// no optional args
-	[sshArgs addObject:@"-Nn"];
+	// sshtunnel args
+	[sshArgs addObject:@"-n"];
 	[sshArgs addObject:@"-oConnectionAttempts=1"];
 	[sshArgs addObject:@"-oExitOnForwardFailure=yes"];
 	[sshArgs addObject:@"-oEscapeChar=none"];
@@ -342,6 +342,12 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	if (self.forceProtocol2)
 	{
 		[sshArgs addObject:@"-2"];
+	}
+	
+	// if !force v1, then specify no execute arg
+	if (!self.forceProtocol1)
+	{
+		[sshArgs addObject:@"-N"];
 	}
 	
 	// identity file
