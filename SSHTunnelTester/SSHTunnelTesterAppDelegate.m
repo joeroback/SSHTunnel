@@ -18,6 +18,15 @@
 @synthesize port;
 @synthesize username;
 @synthesize password;
+@synthesize protocol;
+@synthesize allocatePseudoTTY;
+@synthesize gatewayPorts;
+@synthesize allowsPasswordAuthentication;
+@synthesize allowsPublicKeyAuthentication;
+@synthesize forceIPv4;
+@synthesize forceIPv6;
+@synthesize forceProtocolv1;
+@synthesize forceProtocolv2;
 @synthesize forwardX11;
 @synthesize forwardTrustedX11;
 
@@ -59,10 +68,20 @@
 	
 	// set tunnel options
 	[sshTunnel setConnectTimeout:15U];
-	
+
+	// set options from gui
+	[sshTunnel setAllocatesPseudoTTY:[allocatePseudoTTY state] == NSOnState];
+	[sshTunnel setGatewayPorts:[gatewayPorts state] == NSOnState];
+	[sshTunnel setAllowsPasswordAuthentication:[allowsPasswordAuthentication state] == NSOnState];
+	[sshTunnel setAllowsPublicKeyAuthentication:[allowsPublicKeyAuthentication state] == NSOnState];
+	[sshTunnel setForceIPv4:[forceIPv4 state] == NSOnState];
+	[sshTunnel setForceIPv6:[forceIPv6 state] == NSOnState];
+	[sshTunnel setForceProtocol1:[forceProtocolv1 state] == NSOnState];
+	[sshTunnel setForceProtocol2:[forceProtocolv2 state] == NSOnState];
 	[sshTunnel setX11Forwarding:[forwardX11 state] == NSOnState];
 	[sshTunnel setX11TrustedForwarding:[forwardTrustedX11 state] == NSOnState];
 	
+	// add forwards: local, remote, dynamic (SOCKS5)
 	[sshTunnel addLocalForwardWithBindAddress:@"*"
 					 bindPort:50000U
 					     host:@"localhost"

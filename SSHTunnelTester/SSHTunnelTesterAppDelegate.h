@@ -19,6 +19,15 @@
 	NSTextField *port;
 	NSTextField *username;
 	NSSecureTextField *password;
+	NSMatrix *protocol;
+	NSButton *allocatePseudoTTY;
+	NSButton *gatewayPorts;
+	NSButton *allowsPasswordAuthentication;
+	NSButton *allowsPublicKeyAuthentication;
+	NSButton *forceIPv4;
+	NSButton *forceIPv6;
+	NSButton *forceProtocolv1;
+	NSButton *forceProtocolv2;
 	NSButton *forwardX11;
 	NSButton *forwardTrustedX11;
 	
@@ -30,6 +39,15 @@
 @property (assign) IBOutlet NSTextField *port;
 @property (assign) IBOutlet NSTextField *username;
 @property (assign) IBOutlet NSSecureTextField *password;
+@property (assign) IBOutlet NSMatrix *protocol;
+@property (assign) IBOutlet NSButton *allocatePseudoTTY;
+@property (assign) IBOutlet NSButton *gatewayPorts;
+@property (assign) IBOutlet NSButton *allowsPasswordAuthentication;
+@property (assign) IBOutlet NSButton *allowsPublicKeyAuthentication;
+@property (assign) IBOutlet NSButton *forceIPv4;
+@property (assign) IBOutlet NSButton *forceIPv6;
+@property (assign) IBOutlet NSButton *forceProtocolv1;
+@property (assign) IBOutlet NSButton *forceProtocolv2;
 @property (assign) IBOutlet NSButton *forwardX11;
 @property (assign) IBOutlet NSButton *forwardTrustedX11;
 

@@ -78,7 +78,6 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 @synthesize allocatesPseudoTTY=_allocatesPseudoTTY;
 @synthesize allowsPasswordAuthentication=_allowsPasswordAuthentication;
 @synthesize allowsPublicKeyAuthentication=_allowsPublicKeyAuthentication;
-@synthesize allowRemoteHostsToUseForwardedPorts=_allowRemoteHostsToUseForwardedPorts;
 @synthesize connectTimeout=_connectTimeout;
 @synthesize forceIPv4=_forceIPv4;
 @synthesize forceIPv6=_forceIPv6;
@@ -130,7 +129,6 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 		self.allocatesPseudoTTY = NO;
 		self.allowsPasswordAuthentication = YES;
 		self.allowsPublicKeyAuthentication = YES;
-		self.allowRemoteHostsToUseForwardedPorts = NO;
 		self.connectTimeout = 60U;
 		self.forceIPv4 = NO;
 		self.forceIPv6 = NO;
@@ -314,9 +312,9 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	[sshArgs addObject:[NSString stringWithFormat:@"-oPreferredAuthentications=%@", preferredAuths]];
 	
 	// (-g) allow remote hosts to use forwarded ports
-	if (self.allowRemoteHostsToUseForwardedPorts)
+	if (self.gatewayPorts)
 	{
-		[sshArgs addObject:@"-g"];
+		[sshArgs addObject:@"-oGatewayPorts=yes"];
 	}
 	
 	// (-o) connection timeout
