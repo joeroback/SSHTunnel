@@ -258,17 +258,17 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 - (void)launch
 {
 	NSString *preferredAuths = @"gssapi-with-mic,hostbased";
-	NSPipe *stdErrPipe;
+	NSPipe *stdInPipe, *stdErrPipe;
 	
-	//@synchronized (self)
-	//{
-	if (_launched)
+	@synchronized (self)
 	{
-		[NSException raise:NSInvalidArgumentException
-			    format:@"SSH tunnel already launched"];
+		if (_launched)
+		{
+			[NSException raise:NSInvalidArgumentException
+				    format:@"SSH tunnel already launched"];
+		}
+		_launched = YES;
 	}
-	_launched = YES;
-	//}
 	
 	//
 	// TODO: need more error checking for invalid parameters
@@ -277,14 +277,10 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	// setup named pipe to communicate with helper
 	[self _setupNamedPipe];
 	
-	// setup task to run ssh tunnel in
-	_sshTask = [[NSTask alloc] init];
-	
 	// setup ssh arguments
 	NSMutableArray *sshArgs = [NSMutableArray array];
 	
 	// sshtunnel args
-	[sshArgs addObject:@"-n"];
 	[sshArgs addObject:@"-oConnectionAttempts=1"];
 	[sshArgs addObject:@"-oExitOnForwardFailure=yes"];
 	[sshArgs addObject:@"-oEscapeChar=none"];
@@ -342,12 +338,6 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	if (self.forceProtocol2)
 	{
 		[sshArgs addObject:@"-2"];
-	}
-	
-	// if !force v1, then specify no execute arg
-	if (!self.forceProtocol1)
-	{
-		[sshArgs addObject:@"-N"];
 	}
 	
 	// identity file
@@ -421,15 +411,23 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 		   forKey:@"SSH_ASKPASS"];
 	[sshEnv setObject:_namedPipe
 		   forKey:kSSHTunnelNamedPipe];
+
+	// setup task to run ssh tunnel in
+	_sshTask = [[NSTask alloc] init];
 	
 	// update task and get read for launch
 	[_sshTask setArguments:sshArgs];
 	[_sshTask setEnvironment:sshEnv];
 	[_sshTask setLaunchPath:self.sshLaunchPath];
 	
-	// std error
+	// stdin
+	stdInPipe = [NSPipe pipe];
+	_sshInHandle = [stdInPipe fileHandleForWriting];
+	
+	// stderr
 	stdErrPipe = [NSPipe pipe];
-	_sshErrHandle = [[stdErrPipe fileHandleForReading] retain];
+	_sshErrHandle = [stdErrPipe fileHandleForReading];
+	[_sshErrHandle waitForDataInBackgroundAndNotify];
 	
 	// register terminiation. release of task is done there
 	[[NSNotificationCenter defaultCenter] addObserver:self
@@ -443,8 +441,14 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 						     name:NSFileHandleDataAvailableNotification
 						   object:_sshErrHandle];
 	
-	// don't be rude, don't block :-)
-	[_sshErrHandle waitForDataInBackgroundAndNotify];
+	//
+	// set i/o handles
+	//
+	// setting standard in so if the process
+	// abnormally terminates and closes stdin pipe,
+	// the ssh subtask will also terminate
+	//
+	[_sshTask setStandardInput:stdInPipe];
 	[_sshTask setStandardError:stdErrPipe];
 	
 	// setup thread to send password over pipe

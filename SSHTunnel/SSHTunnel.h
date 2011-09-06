@@ -88,6 +88,8 @@ typedef NSInteger SSHTunnelTerminationReason;
 	NSFileHandle *_namedPipeHandle;
 	NSString *_namedPipe;
 	NSTask *_sshTask;
+	NSFileHandle *_sshInHandle;
+	NSFileHandle *_sshOutHandle;
 	NSFileHandle *_sshErrHandle;
 	BOOL _launched;
 	BOOL _connected;
