@@ -86,17 +86,15 @@
 					 bindPort:50000U
 					     host:@"localhost"
 					 hostPort:22U];
-	
 	[sshTunnel addLocalForwardWithBindAddress:nil
 					 bindPort:50001U
 					     host:@"localhost"
 					 hostPort:5900U];
 	
-	[sshTunnel addRemoteForwardWithBindAddress:nil
+	[sshTunnel addRemoteForwardWithBindAddress:@"*"
 					  bindPort:30000U
 					      host:@"127.0.0.1"
 					  hostPort:25U];
-	
 	[sshTunnel addRemoteForwardWithBindAddress:nil
 					  bindPort:30001U
 					      host:@"localhost"
