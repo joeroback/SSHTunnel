@@ -124,29 +124,33 @@ typedef NSInteger SSHTunnelTerminationReason;
 @property (readonly) SSHTunnelTerminationReason terminationReason;
 
 + (SSHTunnel *)sshTunnelWithHostname:(NSString *)hostname
-				port:(NSUInteger)port
-			    username:(NSString *)username
-			    password:(NSString *)password;
+                                port:(NSUInteger)port
+                            username:(NSString *)username
+                            password:(NSString *)password;
+/*!
+ @abstract Returns an available local port.
+ */
++ (int)localPort;
 
 - (id)init;
 
 - (id)initWithHostname:(NSString *)hostname
-		  port:(NSUInteger)port
-	      username:(NSString *)username
-	      password:(NSString *)password;
+                  port:(NSUInteger)port
+              username:(NSString *)username
+              password:(NSString *)password;
 
 - (void)addLocalForwardWithBindAddress:(NSString *)bindAddress
-			      bindPort:(NSUInteger)bindPort
-				  host:(NSString *)host
-			      hostPort:(NSUInteger)hostPort;
+                              bindPort:(NSUInteger)bindPort
+                                  host:(NSString *)host
+                              hostPort:(NSUInteger)hostPort;
 
 - (void)addRemoteForwardWithBindAddress:(NSString *)bindAddress
-			       bindPort:(NSUInteger)bindPort
-				   host:(NSString *)host
-			       hostPort:(NSUInteger)hostPort;
+                               bindPort:(NSUInteger)bindPort
+                                   host:(NSString *)host
+                               hostPort:(NSUInteger)hostPort;
 
 - (void)addDynamicForwardWithBindAddress:(NSString *)bindAddress
-				bindPort:(NSUInteger)bindPort;
+                                bindPort:(NSUInteger)bindPort;
 
 - (void)launch;
 - (void)terminate;
