@@ -39,6 +39,7 @@
 #import <time.h>
 #import <sys/types.h>
 #import <sys/stat.h>
+#import <netinet/in.h>
 
 
 NSUInteger STDebugLevel = 0U;
@@ -58,10 +59,10 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 
 @interface SSHTunnel ()
 - (void)_addForward:(NSMutableArray *)forwards
-	bindAddress:(NSString *)bindAddress
-	   bindPort:(NSUInteger)bindPort
-	       host:(NSString *)host
-	   hostPort:(NSUInteger)hostPort;
+        bindAddress:(NSString *)bindAddress
+           bindPort:(NSUInteger)bindPort
+               host:(NSString *)host
+           hostPort:(NSUInteger)hostPort;
 - (void)_cleanupNamedPipe;
 - (void)_setupNamedPipe;
 - (void)_processSSHOutput:(NSData *)data;
@@ -111,14 +112,36 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 }
 
 + (SSHTunnel *)sshTunnelWithHostname:(NSString *)hostname
-				port:(NSUInteger)port
-			    username:(NSString *)username
-			    password:(NSString *)password
+                                port:(NSUInteger)port
+                            username:(NSString *)username
+                            password:(NSString *)password
 {
 	return [[[SSHTunnel alloc] initWithHostname:hostname
-					       port:port
-					   username:username
-					   password:password] autorelease];
+                                           port:port
+                                       username:username
+                                       password:password] autorelease];
+}
+
++ (int)localPort
+{
+    int localPort = 9001;
+    int tempSocket;
+    struct sockaddr_in tempSocketAddress;
+    size_t addressLength = sizeof(tempSocketAddress);
+    if((tempSocket = socket(AF_INET, SOCK_STREAM, 0)) > 0) {
+        memset(&tempSocketAddress, 0, sizeof(tempSocketAddress));
+        tempSocketAddress.sin_family = AF_INET;
+        tempSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+        tempSocketAddress.sin_port = 0;
+        if (bind(tempSocket, (struct sockaddr *)&tempSocketAddress, (socklen_t)addressLength) >= 0) {
+            if (getsockname(tempSocket, (struct sockaddr *)&tempSocketAddress, (uint32_t *)&addressLength) >= 0) {
+                localPort = ntohs(tempSocketAddress.sin_port);
+            }
+        }
+        close(tempSocket);
+    }
+    
+    return localPort;
 }
 
 - (id)init
@@ -153,9 +176,9 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 }
 
 - (id)initWithHostname:(NSString *)hostname
-		  port:(NSUInteger)port
-	      username:(NSString *)username
-	      password:(NSString *)password;
+                  port:(NSUInteger)port
+              username:(NSString *)username
+              password:(NSString *)password;
 {
 	if (self = [self init])
 	{
@@ -214,7 +237,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 - (NSString *)description
 {
 	return [NSString stringWithFormat:
-		@"SSHTunnel <%p>: -l%@ -p%u %@",
+		@"SSHTunnel <%p>: -l%@ -p%lu %@",
 		self,
 		self.username,
 		self.port,
@@ -222,37 +245,36 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 }
 
 - (void)addLocalForwardWithBindAddress:(NSString *)bindAddress
-			      bindPort:(NSUInteger)bindPort
-				  host:(NSString *)host
-			      hostPort:(NSUInteger)hostPort
+                              bindPort:(NSUInteger)bindPort
+                                  host:(NSString *)host
+                              hostPort:(NSUInteger)hostPort
 {
 	[self _addForward:_localForwards
 	      bindAddress:bindAddress
-		 bindPort:bindPort
-		     host:host
-		 hostPort:hostPort];
+             bindPort:bindPort
+                 host:host
+             hostPort:hostPort];
 }
 
 - (void)addRemoteForwardWithBindAddress:(NSString *)bindAddress
-			       bindPort:(NSUInteger)bindPort
-				   host:(NSString *)host
-			       hostPort:(NSUInteger)hostPort
+                               bindPort:(NSUInteger)bindPort
+                                   host:(NSString *)host
+                               hostPort:(NSUInteger)hostPort
 {
 	[self _addForward:_remoteForwards
 	      bindAddress:bindAddress
-		 bindPort:bindPort
-		     host:host
-		 hostPort:hostPort];
+             bindPort:bindPort
+                 host:host
+             hostPort:hostPort];
 }
 
-- (void)addDynamicForwardWithBindAddress:(NSString *)bindAddress
-				bindPort:(NSUInteger)bindPort
+- (void)addDynamicForwardWithBindAddress:(NSString *)bindAddress bindPort:(NSUInteger)bindPort
 {
 	[self _addForward:_dynamicForwards
-	      bindAddress:bindAddress
-		 bindPort:bindPort
-		     host:nil
-		 hostPort:0U];
+          bindAddress:bindAddress
+             bindPort:bindPort
+                 host:nil
+             hostPort:0U];
 }
 
 - (void)launch
@@ -264,8 +286,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		if (_launched)
 		{
-			[NSException raise:NSInvalidArgumentException
-				    format:@"SSH tunnel already launched"];
+			[NSException raise:NSInvalidArgumentException format:@"SSH tunnel already launched"];
 		}
 		_launched = YES;
 	}
@@ -279,6 +300,9 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	
 	// setup ssh arguments
 	NSMutableArray *sshArgs = [NSMutableArray array];
+    
+    [sshArgs addObject:@"-v"];
+    [sshArgs addObject:@"-N"];
 	
 	// sshtunnel args
 	[sshArgs addObject:@"-oConnectionAttempts=1"];
@@ -314,7 +338,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	}
 	
 	// (-o) connection timeout
-	[sshArgs addObject:[NSString stringWithFormat:@"-oConnectTimeout=%u", self.connectTimeout]];
+	[sshArgs addObject:[NSString stringWithFormat:@"-oConnectTimeout=%lu", self.connectTimeout]];
 	
 	// (-4) force ipv4
 	if (self.forceIPv4)
@@ -365,11 +389,11 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		NSString *bindAddress = [localForward valueForKey:kSSHTunnelForwardBindAddress];
 		
-		[sshArgs addObject:[NSString stringWithFormat:@"-L%@:%u:%@:%u",
+		[sshArgs addObject:[NSString stringWithFormat:@"-L%@:%lu:%@:%lu",
 				    (bindAddress) ? bindAddress : @"",
-				    [[localForward valueForKey:kSSHTunnelForwardBindPort] integerValue],
+				    [[localForward valueForKey:kSSHTunnelForwardBindPort] unsignedIntegerValue],
 				    [localForward valueForKey:kSSHTunnelForwardHost],
-				    [[localForward valueForKey:kSSHTunnelForwardHostPort] integerValue]]];
+				    [[localForward valueForKey:kSSHTunnelForwardHostPort] unsignedIntegerValue]]];
 	}
 	
 	// remote forwards
@@ -377,11 +401,11 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		NSString *bindAddress = [remoteForward valueForKey:kSSHTunnelForwardBindAddress];
 		
-		[sshArgs addObject:[NSString stringWithFormat:@"-R%@:%u:%@:%u",
+		[sshArgs addObject:[NSString stringWithFormat:@"-R%@:%lu:%@:%lu",
 				    (bindAddress) ? bindAddress : @"",
-				    [[remoteForward valueForKey:kSSHTunnelForwardBindPort] integerValue],
+				    [[remoteForward valueForKey:kSSHTunnelForwardBindPort] unsignedIntegerValue],
 				    [remoteForward valueForKey:kSSHTunnelForwardHost],
-				    [[remoteForward valueForKey:kSSHTunnelForwardHostPort] integerValue]]];
+				    [[remoteForward valueForKey:kSSHTunnelForwardHostPort] unsignedIntegerValue]]];
 	}
 	
 	// dynamic forwards (socks proxy)
@@ -389,16 +413,19 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		NSString *bindAddress = [dynamicForward valueForKey:kSSHTunnelForwardBindAddress];
 		
-		[sshArgs addObject:[NSString stringWithFormat:@"-D%@:%u",
+		[sshArgs addObject:[NSString stringWithFormat:@"-D%@:%lu",
 				    (bindAddress) ? bindAddress : @"",
-				    [[dynamicForward valueForKey:kSSHTunnelForwardBindPort] integerValue]]];
+				    [[dynamicForward valueForKey:kSSHTunnelForwardBindPort] unsignedIntegerValue]]];
 	}
 	
 	// remote hostname:port and login
 	[sshArgs addObject:[NSString stringWithFormat:@"-l%@", self.username]];
-	[sshArgs addObject:[NSString stringWithFormat:@"-p%u", self.port]];
+	[sshArgs addObject:[NSString stringWithFormat:@"-p%lu", self.port]];
 	[sshArgs addObject:self.hostname];
 	
+#ifdef DEBUG
+    NSLog(@"%@", sshArgs);
+#endif
 	STDebugLog(ST_D_LAUNCH, @"ssh args = %@", sshArgs);
 	
 	// setup ssh environment
@@ -406,11 +433,9 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	
 	// need for SSH_ASKPASS stuff to work
 	[sshEnv addEntriesFromDictionary:[[NSProcessInfo processInfo] environment]];
-	[sshEnv setObject:[[NSBundle bundleForClass:[self class]]
-			   pathForResource:@"SSHTunnelHelper" ofType:nil]
-		   forKey:@"SSH_ASKPASS"];
-	[sshEnv setObject:_namedPipe
-		   forKey:kSSHTunnelNamedPipe];
+	[sshEnv setObject:[[NSBundle bundleForClass:[self class]] pathForResource:@"SSHTunnelHelper" ofType:nil]
+               forKey:@"SSH_ASKPASS"];
+	[sshEnv setObject:_namedPipe forKey:kSSHTunnelNamedPipe];
 
 	// setup task to run ssh tunnel in
 	_sshTask = [[NSTask alloc] init];
@@ -431,15 +456,15 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	
 	// register terminiation. release of task is done there
 	[[NSNotificationCenter defaultCenter] addObserver:self
-						 selector:@selector(sshDidTerminate:)
-						     name:NSTaskDidTerminateNotification
-						   object:_sshTask];
+                                             selector:@selector(sshDidTerminate:)
+                                                 name:NSTaskDidTerminateNotification
+                                               object:_sshTask];
 	
 	// register for output
 	[[NSNotificationCenter defaultCenter] addObserver:self
-						 selector:@selector(sshStdErr:)
-						     name:NSFileHandleDataAvailableNotification
-						   object:_sshErrHandle];
+                                             selector:@selector(sshStdErr:)
+                                                 name:NSFileHandleDataAvailableNotification
+                                               object:_sshErrHandle];
 	
 	//
 	// set i/o handles
@@ -454,9 +479,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	// setup thread to send password over pipe
 	// using thread since writeData blocks and maybe
 	// would take some time if the remote host is slow
-	[NSThread detachNewThreadSelector:@selector(_namedPipeThread:)
-				 toTarget:self
-			       withObject:nil];
+	[NSThread detachNewThreadSelector:@selector(_namedPipeThread:) toTarget:self withObject:nil];
 	
 	// startup ssh process
 	[_sshTask launch];
@@ -470,8 +493,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		if (!_launched)
 		{
-			[NSException raise:NSInvalidArgumentException
-				    format:@"SSH tunnel not launched"];
+			[NSException raise:NSInvalidArgumentException format:@"SSH tunnel not launched"];
 		}
 	}
 	
@@ -488,8 +510,7 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		if (!_launched)
 		{
-			[NSException raise:NSInvalidArgumentException
-				    format:@"SSH tunnel not launched"];
+			[NSException raise:NSInvalidArgumentException format:@"SSH tunnel not launched"];
 		}
 	}
 	
@@ -514,15 +535,13 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	{
 		if (!_launched)
 		{
-			[NSException raise:NSInvalidArgumentException
-				    format:@"SSH tunnel not launched"];
+			[NSException raise:NSInvalidArgumentException format:@"SSH tunnel not launched"];
 		}
 	}
 	
 	if ([self isRunning])
 	{
-		[NSException raise:NSInvalidArgumentException
-			    format:@"SSH tunnel still running"];
+		[NSException raise:NSInvalidArgumentException format:@"SSH tunnel still running"];
 	}
 	
 	return _terminationReason;
@@ -566,29 +585,26 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 #pragma mark Private API
 
 - (void)_addForward:(NSMutableArray *)forwards
-	bindAddress:(NSString *)bindAddress
-	   bindPort:(NSUInteger)bindPort
-	       host:(NSString *)host
-	   hostPort:(NSUInteger)hostPort
+        bindAddress:(NSString *)bindAddress
+           bindPort:(NSUInteger)bindPort
+               host:(NSString *)host
+           hostPort:(NSUInteger)hostPort
 {
 	if (bindPort < 1 || bindPort > UINT16_MAX)
 	{
-		[NSException raise:NSInvalidArgumentException
-			    format:@"SSH tunnel invalid bind port"];
+		[NSException raise:NSInvalidArgumentException format:@"SSH tunnel invalid bind port"];
 	}
 	
 	if (forwards != _dynamicForwards)
 	{
 		if (!host || [host length] <= 0)
 		{
-			[NSException raise:NSInvalidArgumentException
-				    format:@"SSH tunnel invalid host"];
+			[NSException raise:NSInvalidArgumentException format:@"SSH tunnel invalid host"];
 		}
 		
 		if (hostPort < 1 || hostPort > UINT16_MAX)
 		{
-			[NSException raise:NSInvalidArgumentException
-				    format:@"SSH tunnel invalid host port"];
+			[NSException raise:NSInvalidArgumentException format:@"SSH tunnel invalid host port"];
 		}
 	}
 	
@@ -668,15 +684,13 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	
 	if (limit > 99)
 	{
-		[NSException raise:NSInvalidArgumentException
-			    format:@"could not create unique pipe name"];
+		[NSException raise:NSInvalidArgumentException format:@"could not create unique pipe name"];
 	}
 	
 	// create fifo pipe
 	if ((ret = mkfifo([_namedPipe cStringUsingEncoding:NSUTF8StringEncoding], S_IRUSR|S_IWUSR)) != 0)
 	{
-		[NSException raise:NSInvalidArgumentException
-			    format:@"could not create communication pipe (%d)", ret];
+		[NSException raise:NSInvalidArgumentException format:@"could not create communication pipe (%d)", ret];
 	}
 	
 	// keep this around until dealloc
@@ -690,27 +704,22 @@ static NSString *SSHTunnelNamedPipeFormat = @"/tmp/sshtunnel-%@-%08x";
 	if ([data length] > 0)
 	{
 		NSString *log = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-		
-#ifndef NDEBUG
-		for (NSString *line in [log componentsSeparatedByString:@"\n"])
-		{
-			STDebugLog(ST_D_PROCESSOUTPUT, @"# %@", line);
-		}
+#ifdef DEBUG
+        NSLog(@"%@", log);
 #endif
-		
+        
 		if ([log rangeOfString:@"Entering interactive session."].location != NSNotFound)
 		{
 			// stop listening to ssh output
 			[[NSNotificationCenter defaultCenter] removeObserver:self
-									name:NSFileHandleDataAvailableNotification
-								      object:_sshErrHandle];
+                                                            name:NSFileHandleDataAvailableNotification
+                                                          object:_sshErrHandle];
 			
 			// we are connected!
 			_connected = YES;
 			
 			// post notification that we are connected
-			[[NSNotificationCenter defaultCenter] postNotificationName:SSHTunnelDidConnectNotification
-									    object:self];
+			[[NSNotificationCenter defaultCenter] postNotificationName:SSHTunnelDidConnectNotification object:self];
 		}
 		else if ([log rangeOfString:@"Permission denied"].location != NSNotFound)
 		{
